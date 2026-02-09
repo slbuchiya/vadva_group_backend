@@ -9,6 +9,6 @@ services:
       - key: PORT
         value: 10000
       - key: MONGO_URI
-        fromConnectionString: true
+        sync: false
       - key: NODE_VERSION
         value: 20.11.0
