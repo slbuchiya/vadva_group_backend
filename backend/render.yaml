@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: tshirt-store-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        fromConnectionString: true
+      - key: NODE_VERSION
+        value: 20.11.0

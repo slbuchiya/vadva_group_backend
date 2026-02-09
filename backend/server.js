@@ -8,7 +8,7 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Configure Multer Storage
 const storage = multer.diskStorage({
@@ -36,7 +36,9 @@ app.use(express.static('../frontend'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // MongoDB Connection
-mongoose.connect('mongodb://localhost:27017/tshirt_store')
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/tshirt_store';
+
+mongoose.connect(MONGO_URI)
     .then(async () => {
         console.log('MongoDB Connected');
         // Initialize Default UPI ID
