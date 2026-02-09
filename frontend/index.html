@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Shirt Payment Portal</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>T-Shirt Payment</h1>
+            <p>Enter your mobile number to view details</p>
+        </header>
+
+        <div class="search-section">
+            <input type="tel" id="mobileInput" placeholder="Enter Mobile Number" maxlength="10">
+            <button onclick="searchUser()">Search Order</button>
+        </div>
+
+        <div id="resultSection" class="result-section hidden">
+            <div id="ordersContainer"></div>
+
+            <div class="card total-card">
+                <h2>Total Payment</h2>
+                <div class="detail-row">
+                    <span>Total Amount:</span>
+                    <strong id="totalAmount">₹0</strong>
+                </div>
+                <button id="payBtn" onclick="generateQR()">Pay Now</button>
+
+                <div id="qrSection" class="qr-section hidden">
+                    <h3>Scan to Pay</h3>
+                    <div id="qrcode"></div>
+                    <p class="upi-id">UPI ID: <span id="upiIdDisplay">INSERT_UPI_HERE</span></p>
+                    <a id="upiLink" href="#" class="upi-btn">Open in UPI App</a>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorMsg" class="error-msg hidden">User not found! Please check the number.</div>
+
+        <a href="admin.html"
+            style="position: absolute; top: 20px; right: 20px; text-decoration: none; background: rgba(255,255,255,0.5); padding: 5px 10px; border-radius: 5px; color: #333; font-size: 0.8rem;">Admin</a>
+    </div>
+
+    <script>
+        let UPI_ID = 'mobile@upi';
+        let CUSTOM_QR = '';
+        let TOTAL_AMOUNT = 0;
+        let ORDER_DETAILS_TEXT = '';
+
+        // Fetch settings on load
+        refreshSettings();
+
+        function refreshSettings() {
+            fetch('/api/settings')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.upiId) UPI_ID = data.upiId;
+                    if (data.qrImage) CUSTOM_QR = data.qrImage;
+                    if (data.bgImage) {
+                        document.body.style.backgroundImage = `url('${data.bgImage}')`;
+                        document.body.style.backgroundSize = 'cover';
+                        document.body.style.backgroundPosition = 'center';
+                        document.body.style.backgroundAttachment = 'fixed';
+                    } else {
+                        document.body.style.backgroundImage = 'none';
+                    }
+                });
+        }
+
+        async function searchUser() {
+            refreshSettings(); // Get latest settings (UPI/QR)
+            const mobile = document.getElementById('mobileInput').value;
+            const resultSection = document.getElementById('resultSection');
+            const ordersContainer = document.getElementById('ordersContainer');
+            const errorMsg = document.getElementById('errorMsg');
+            const qrSection = document.getElementById('qrSection');
+
+            // Reset UI
+            resultSection.classList.add('hidden');
+            errorMsg.classList.add('hidden');
+            qrSection.classList.add('hidden');
+            document.getElementById('qrcode').innerHTML = '';
+            ordersContainer.innerHTML = '';
+            TOTAL_AMOUNT = 0;
+            ORDER_DETAILS_TEXT = '';
+
+            if (!mobile || mobile.length < 10) {
+                alert('Please enter a valid mobile number');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/user/${mobile}`);
+                if (!response.ok) throw new Error('User not found');
+
+                const users = await response.json();
+
+                if (users.length === 0) throw new Error('No users found');
+
+                users.forEach((user, index) => {
+                    TOTAL_AMOUNT += user.amount;
+                    ORDER_DETAILS_TEXT += `${user.fullName} (${user.size}), `;
+
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                <h2>Order #${index + 1}</h2>
+                <div class="detail-row">
+                    <span>Name:</span>
+                    <strong>${user.fullName}</strong>
+                </div>
+                <div class="detail-row">
+                    <span>T-Shirt Name:</span>
+                    <strong>${user.tshirtName}</strong>
+                </div>
+                <div class="detail-row">
+                    <span>Size:</span>
+                    <strong>${user.size}</strong>
+                </div>
+                <div class="detail-row">
+                    <span>Amount:</span>
+                    <strong>₹${user.amount}</strong>
+                </div>
+            `;
+                    ordersContainer.appendChild(card);
+                });
+
+                document.getElementById('totalAmount').textContent = `₹${TOTAL_AMOUNT}`;
+
+                resultSection.classList.remove('hidden');
+            } catch (error) {
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        function generateQR() {
+            // UPI URL format: upi://pay?pa=UPI_ID&pn=NAME&am=AMOUNT&cu=INR
+            const note = `Payment for ${ORDER_DETAILS_TEXT}`.substring(0, 50);
+            const upiUrl = `upi://pay?pa=${UPI_ID}&pn=TShirt_Payment&am=${TOTAL_AMOUNT}&cu=INR&tn=${encodeURIComponent(note)}`;
+
+            const qrSection = document.getElementById('qrSection');
+            qrSection.classList.remove('hidden');
+
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+
+            if (CUSTOM_QR) {
+                // Use Custom Image
+                const img = document.createElement('img');
+                img.src = CUSTOM_QR;
+                img.style.width = '200px';
+                img.style.height = 'auto'; // Maintain aspect ratio? Or square 200x200
+                // img.style.height = '200px'; 
+                qrContainer.appendChild(img);
+            } else {
+                // Auto Generate
+                new QRCode(document.getElementById("qrcode"), {
+                    text: upiUrl,
+                    width: 200,
+                    height: 200
+                });
+            }
+
+            document.getElementById('upiLink').href = upiUrl;
+            document.getElementById('upiIdDisplay').textContent = UPI_ID + (CUSTOM_QR ? ' (Custom QR)' : '');
+        }
+    </script>
+</body>
+
+</html>

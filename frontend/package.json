@@ -1,0 +1,8 @@
+{
+    "name": "frontend",
+    "version": "1.0.0",
+    "description": "Static frontend served by backend",
+    "scripts": {
+        "dev": "echo \"\n⚠️  NOTE: This is a static frontend.\n✅ It is ALREADY RUNNING via the backend.\n👉 Please open http://localhost:3000 in your browser.\n\""
+    }
+}
