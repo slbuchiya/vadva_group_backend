@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // URI provided by user
-const uri = "mongodb+srv://admin:admin@govindsuragroup.ghhvytp.mongodb.net/tshirt_store?retryWrites=true&w=majority&appName=GovindSuraGroup";
+const uri = "mongodb+srv://Sachin1966:Sachin1966@smartfit.bocyckn.mongodb.net/?appName=SMARTFIT";
 
 console.log("Attempting to connect...");
 
