@@ -170,6 +170,15 @@
             </div>
 
             <div class="settings-group">
+                <label>Global Price (Set Amount for ALL Users)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="globalPriceInput" placeholder="Enter Amount" style="flex: 1;" value="500">
+                    <button onclick="setGlobalPrice()"
+                        style="width: auto; padding: 0 20px; background: #ff9800; color: black;">Set for All</button>
+                </div>
+            </div>
+
+            <div class="settings-group">
                 <label>Custom QR Code Image</label>
                 <input type="file" id="qrUpload" hidden onchange="uploadQR()">
                 <label for="qrUpload" class="file-upload-btn">
@@ -189,17 +198,6 @@
                     <i class="fas fa-image"></i> Choose Background
                 </label>
                 <div id="bgPreview"></div>
-            </div>
-
-            <div class="settings-group" style="padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-                <label style="color: #ffb74d;"><i class="fas fa-tags"></i> Bulk Price Update (All Users)</label>
-                <div style="display: flex; gap: 10px;">
-                    <input type="number" id="bulkPriceInput" placeholder="New Price (e.g. 350)" style="flex: 1;">
-                    <button onclick="updateBulkPrice()"
-                        style="width: auto; padding: 0 20px; background: #ff9800;">Update All</button>
-                </div>
-                <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-top: 5px;">Warning: This will change
-                    the amount for EVERY registered user.</p>
             </div>
         </div>
 
@@ -237,7 +235,7 @@
 
     <script>
         // Render Backend URL (આ ખાસ ઉમેરવું)
-        const BACKEND_URL = '';
+        const BACKEND_URL = 'https://vadva-group-backend-1.onrender.com';
 
         // Initialize
         // fetchSettings(); // Moved to checkPin
@@ -291,6 +289,25 @@
                 .catch(err => alert('Error updating UPI'));
         }
 
+        function setGlobalPrice() {
+            const amount = document.getElementById('globalPriceInput').value;
+            if (!amount) return alert('Please enter an amount');
+
+            if (confirm(`Are you sure you want to set price to ₹${amount} for ALL users?`)) {
+                fetch(`${BACKEND_URL}/api/users/amount`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        alert(data.message);
+                        fetchOrders(); // Refresh list to show new prices
+                    })
+                    .catch(err => alert('Error updating price'));
+            }
+        }
+
         function uploadQR() {
             const file = document.getElementById('qrUpload').files[0];
             if (!file) return;
@@ -338,25 +355,6 @@
                     fetchSettings();
                 })
                 .catch(err => alert('Upload failed'));
-        }
-
-        function updateBulkPrice() {
-            const price = document.getElementById('bulkPriceInput').value;
-            if (!price) return alert('Please enter a price');
-
-            if (!confirm(`Are you sure you want to set the price to ₹${price} for ALL users?`)) return;
-
-            fetch(`${BACKEND_URL}/api/settings/bulk-price`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ price: Number(price) })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    alert(data.message);
-                    fetchOrders(); // Refresh list to show new prices
-                })
-                .catch(err => alert('Failed to update price'));
         }
 
         async function fetchOrders() {
