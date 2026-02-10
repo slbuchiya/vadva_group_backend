@@ -93,23 +93,30 @@ const importData = async () => {
                 continue;
             }
 
-            // Upsert: Update if mobile exists, otherwise insert
-            await User.findOneAndUpdate(
-                { mobile: user.mobile },
-                {
-                    $set: {
+            try {
+                // Upsert: Match by Mobile + Name + TshirtName to allow multiple orders per mobile
+                // If the same person ordered twice exactly same thing, this will merge them.
+                // But different family members (different names) or different shirts will be kept separate.
+                await User.findOneAndUpdate(
+                    {
+                        mobile: user.mobile,
                         fullName: user.fullName,
-                        tshirtName: user.tshirtName,
-                        size: user.size,
-                        // Default values are handled by schema if creating new, 
-                        // but standard practice to set them if needed or let defaults handle it.
-                        // Schema defaults: amount: 300, paymentStatus: false
-                    }
-                },
-                { upsert: true, new: true, setDefaultsOnInsert: true }
-            );
-            process.stdout.write('.');
-            count++;
+                        tshirtName: user.tshirtName
+                    },
+                    {
+                        $set: {
+                            size: user.size,
+                            // Default values are handled by schema if creating new, 
+                        }
+                    },
+                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                );
+                process.stdout.write('.');
+                count++;
+            } catch (rowError) {
+                console.error(`\n❌ Error importing row: ${JSON.stringify(user)}`);
+                console.error(`Error details: ${rowError.message}`);
+            }
         }
 
         console.log(`\nImported/Updated ${count} users successfully.`);

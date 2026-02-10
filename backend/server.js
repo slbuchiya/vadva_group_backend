@@ -148,6 +148,19 @@ app.put('/api/user/:id/payment', async (req, res) => {
     }
 });
 
+app.post('/api/settings/bulk-price', async (req, res) => {
+    try {
+        const { price } = req.body;
+        if (!price) return res.status(400).json({ message: 'Price is required' });
+
+        const result = await User.updateMany({}, { $set: { amount: price } });
+        res.json({ message: `Price updated for ${result.modifiedCount} users`, count: result.modifiedCount });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 app.get('/api/user/:mobile', async (req, res) => {
     try {
         const mobile = req.params.mobile;
