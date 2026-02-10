@@ -164,12 +164,17 @@ app.get('/api/user/:mobile', async (req, res) => {
     }
 });
 
-// Root route - ફક્ત ચેક કરવા માટે કે સર્વર ચાલુ છે
+// Serve Static Frontend Files
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Routes for Frontend
 app.get('/', (req, res) => {
-    res.send('Vadva Group Backend is Running! Access Frontend via Vercel.');
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Catch-All Route કાઢી નાખ્યો છે કારણ કે Frontend અલગ છે.
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

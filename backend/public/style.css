@@ -1,0 +1,377 @@
+:root {
+    --primary-color: #6C63FF;
+    --primary-dark: #5a52d5;
+    --secondary-color: #00bf8f;
+    --secondary-dark: #008f6b;
+    --danger-color: #ff4757;
+    --bg-gradient: linear-gradient(135deg, #1e1e2f 0%, #2d2b42 100%);
+    /* Darker, richer background */
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    /* More subtle glass */
+    --card-bg: rgba(255, 255, 255, 0.95);
+    --text-color: #f0f0f0;
+    --text-dark: #333;
+    --shadow-light: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --border-light: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background: var(--bg-gradient);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    color: var(--text-color);
+}
+
+/* Glassmorphism Container */
+.container {
+    width: 100%;
+    max-width: 600px;
+    background: var(--glass-bg);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: var(--shadow-light);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: var(--border-light);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    /* For inner animations */
+}
+
+/* Header Styles */
+header h1 {
+    color: white;
+    margin-bottom: 5px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+header p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    margin-bottom: 30px;
+}
+
+/* Common Input Styles */
+input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 1rem;
+    margin-bottom: 15px;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+input:focus {
+    border-color: var(--primary-color);
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 10px rgba(108, 99, 255, 0.3);
+}
+
+/* Admin Specific Inputs (White Background Context) */
+.settings-card input,
+.login-box input {
+    background: #f4f6f8;
+    color: #333;
+    border: 1px solid #ddd;
+}
+
+.settings-card input:focus,
+.login-box input:focus {
+    background: white;
+    color: #333;
+}
+
+.settings-card label {
+    color: var(--text-dark);
+    font-weight: 500;
+    display: block;
+    margin-bottom: 5px;
+    text-align: left;
+}
+
+
+/* Button Styles */
+button {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+button:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(108, 99, 255, 0.3);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Card Styles */
+.card {
+    background: var(--card-bg);
+    color: var(--text-dark);
+    padding: 20px;
+    border-radius: 15px;
+    margin-top: 20px;
+    text-align: left;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    animation: slideUp 0.5s ease-out;
+}
+
+.total-card {
+    background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%);
+    border-left: 5px solid var(--secondary-color);
+}
+
+/* Admin Dashboard Specifics */
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.admin-header h2 {
+    color: white;
+}
+
+.logout-btn {
+    background: var(--danger-color);
+    width: auto;
+    padding: 8px 20px;
+    font-size: 0.9rem;
+}
+
+.logout-btn:hover {
+    background: #d32f2f;
+    box-shadow: 0 4px 10px rgba(255, 71, 87, 0.3);
+}
+
+.settings-card {
+    background: var(--card-bg);
+    color: var(--text-dark);
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    animation: slideInLeft 0.5s ease-out;
+}
+
+.filter-section {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 5px;
+    border-radius: 12px;
+}
+
+.filter-btn {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    width: auto;
+    flex: 1;
+    box-shadow: none;
+}
+
+.filter-btn.active {
+    background: white;
+    color: var(--primary-color);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.user-item {
+    background: var(--card-bg);
+    color: var(--text-dark);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s;
+    animation: fadeIn 0.5s ease-in;
+}
+
+.user-item:hover {
+    transform: scale(1.02);
+}
+
+.user-info h4 {
+    margin: 0 0 5px 0;
+    color: var(--text-dark);
+}
+
+.user-info p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #666;
+}
+
+/* Editable Price Input */
+.price-input {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--primary-color);
+    font-weight: 600;
+    width: 80px;
+    padding: 5px;
+    border-radius: 5px;
+    transition: all 0.2s;
+    font-size: 1rem;
+}
+
+.price-input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary-color);
+    outline: none;
+    color: var(--text-dark);
+}
+
+.price-input:hover {
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Payment Status Badge */
+.payment-toggle {
+    cursor: pointer;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-paid {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.status-paid:hover {
+    background: #c8e6c9;
+}
+
+.status-unpaid {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.status-unpaid:hover {
+    background: #ffcdd2;
+}
+
+/* Overlays */
+#loginOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    /* Darker overlay */
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s;
+}
+
+.login-box {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    color: var(--text-dark);
+    animation: scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Utility Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes scaleUp {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.hidden {
+    display: none;
+}

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Vadva Group</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Admin Specific Styles */
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .refresh-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+
+        .order-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .order-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+
+        .order-item:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .status-paid {
+            background: rgba(46, 125, 50, 0.2);
+            color: #81c784;
+            border: 1px solid rgba(46, 125, 50, 0.5);
+        }
+
+        .status-pending {
+            background: rgba(245, 124, 0, 0.2);
+            color: #ffb74d;
+            border: 1px solid rgba(245, 124, 0, 0.5);
+        }
+
+        /* Settings Section */
+        .settings-panel {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .settings-group {
+            margin-bottom: 20px;
+        }
+
+        .settings-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .file-upload-btn {
+            background: var(--primary-color);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+
+        .preview-img {
+            max-width: 100px;
+            margin-top: 10px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- PIN Overlay -->
+    <div id="pinOverlay"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1e1e2f; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <h2 style="margin-bottom: 20px;">Enter Admin PIN</h2>
+        <input type="password" id="pinInput"
+            style="padding: 10px; font-size: 1.2rem; border-radius: 5px; border: none; text-align: center; margin-bottom: 20px; width: 200px;"
+            maxlength="4">
+        <button onclick="checkPin()"
+            style="padding: 10px 30px; font-size: 1rem; background: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer;">Submit</button>
+        <p id="pinError" style="color: #e53935; margin-top: 10px; display: none;">Incorrect PIN</p>
+    </div>
+
+    <div class="container" id="adminContainer" style="filter: blur(5px); pointer-events: none;">
+        <header class="admin-header">
+            <h1 style="font-size: 1.5rem; margin: 0;">Vadva Group Admin</h1>
+            <button class="refresh-btn" onclick="fetchOrders()">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </header>
+
+        <div class="settings-panel">
+            <h3 style="margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
+                <i class="fas fa-cogs"></i> Payment Settings
+            </h3>
+
+            <div class="settings-group">
+                <label>UPI ID (e.g. mobile@upi)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="upiIdInput" placeholder="Enter UPI ID" style="flex: 1;">
+                    <button onclick="saveUpi()" style="width: auto; padding: 0 20px;">Save</button>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <label>Custom QR Code Image</label>
+                <input type="file" id="qrUpload" hidden onchange="uploadQR()">
+                <label for="qrUpload" class="file-upload-btn">
+                    <i class="fas fa-upload"></i> Choose QR Image
+                </label>
+                <div id="qrPreview"></div>
+                <button onclick="removeQR()"
+                    style="background: #e53935; width: auto; margin-top: 10px; padding: 5px 10px; font-size: 0.8rem;">
+                    Remove Custom QR
+                </button>
+            </div>
+
+            <div class="settings-group">
+                <label>Custom Background Image</label>
+                <input type="file" id="bgUpload" hidden onchange="uploadBG()">
+                <label for="bgUpload" class="file-upload-btn" style="background: #4caf50;">
+                    <i class="fas fa-image"></i> Choose Background
+                </label>
+                <div id="bgPreview"></div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div style="color: rgba(255,255,255,0.6);">Total Orders</div>
+                <div class="stat-number" id="totalOrders">0</div>
+            </div>
+            <div class="stat-card">
+                <div style="color: rgba(255,255,255,0.6);">Total Amount</div>
+                <div class="stat-number" id="totalRevenue" style="color: #81c784;">₹0</div>
+            </div>
+            <div class="stat-card">
+                <div style="color: rgba(255,255,255,0.6);">Paid / Pending</div>
+                <div class="stat-number" style="font-size: 1.5rem;">
+                    <span style="color: #81c784;" id="paidCount">0</span> /
+                    <span style="color: #ffb74d;" id="pendingCount">0</span>
+                </div>
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 20px;">Recent Orders</h3>
+        <div id="adminOrderList" class="order-list">
+            <div style="text-align: center; color: rgba(255,255,255,0.5); padding: 20px;">
+                Loading orders...
+            </div>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="index.html" style="color: rgba(255,255,255,0.4); text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> Back to Payment Page
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Render Backend URL (આ ખાસ ઉમેરવું)
+        const BACKEND_URL = '';
+
+        // Initialize
+        // fetchSettings(); // Moved to checkPin
+        // fetchOrders();   // Moved to checkPin
+
+        function checkPin() {
+            const pin = document.getElementById('pinInput').value;
+            if (pin === '1966') {
+                document.getElementById('pinOverlay').style.display = 'none';
+                const container = document.getElementById('adminContainer');
+                container.style.filter = 'none';
+                container.style.pointerEvents = 'all';
+
+                // Load data only after PIN check
+                fetchSettings();
+                fetchOrders();
+            } else {
+                document.getElementById('pinError').style.display = 'block';
+            }
+        }
+
+        function fetchSettings() {
+            // સુધારો 1: Render URL વાપરો
+            fetch(`${BACKEND_URL}/api/settings`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.upiId) {
+                        document.getElementById('upiIdInput').value = data.upiId;
+                    }
+                    if (data.qrImage) {
+                        // સુધારો 2: ઈમેજ પાથ સાથે URL જોડો
+                        const qrUrl = data.qrImage.startsWith('http') ? data.qrImage : `${BACKEND_URL}${data.qrImage}`;
+                        document.getElementById('qrPreview').innerHTML = `<img src="${qrUrl}" class="preview-img">`;
+                    }
+                    if (data.bgImage) {
+                        const bgUrl = data.bgImage.startsWith('http') ? data.bgImage : `${BACKEND_URL}${data.bgImage}`;
+                        document.getElementById('bgPreview').innerHTML = `<img src="${bgUrl}" class="preview-img">`;
+                    }
+                });
+        }
+
+        function saveUpi() {
+            const upiId = document.getElementById('upiIdInput').value;
+            fetch(`${BACKEND_URL}/api/settings/upi`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ upiId })
+            })
+                .then(res => res.json())
+                .then(data => alert('UPI ID Updated!'))
+                .catch(err => alert('Error updating UPI'));
+        }
+
+        function uploadQR() {
+            const file = document.getElementById('qrUpload').files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('qrImage', file);
+
+            fetch(`${BACKEND_URL}/api/settings/qr`, {
+                method: 'POST',
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    alert('QR Image Uploaded');
+                    fetchSettings(); // Refresh preview
+                })
+                .catch(err => alert('Upload failed'));
+        }
+
+        function removeQR() {
+            if (confirm('Are you sure you want to remove custom QR? Default QR will be generated.')) {
+                fetch(`${BACKEND_URL}/api/settings/qr`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(() => {
+                        document.getElementById('qrPreview').innerHTML = '';
+                        alert('Custom QR Removed');
+                    });
+            }
+        }
+
+        function uploadBG() {
+            const file = document.getElementById('bgUpload').files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('bgImage', file);
+
+            fetch(`${BACKEND_URL}/api/settings/bg`, {
+                method: 'POST',
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    alert('Background Updated');
+                    fetchSettings();
+                })
+                .catch(err => alert('Upload failed'));
+        }
+
+        async function fetchOrders() {
+            const list = document.getElementById('adminOrderList');
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/users`); // Render URL
+                const users = await res.json();
+
+                if (users.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; padding: 20px;">No orders found</div>';
+                    return;
+                }
+
+                // Calculate Stats
+                let totalAmt = 0;
+                let paid = 0;
+                let pending = 0;
+
+                let html = '';
+                users.forEach(user => {
+                    totalAmt += user.amount;
+                    if (user.paymentStatus) paid++; else pending++;
+
+                    const statusClass = user.paymentStatus ? 'status-paid' : 'status-pending';
+                    const statusText = user.paymentStatus ? 'PAID' : 'PENDING';
+
+                    html += `
+                        <div class="order-item">
+                            <div>
+                                <div style="font-weight: 600; font-size: 1.1rem;">${user.fullName}</div>
+                                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-top: 4px;">
+                                    <i class="fas fa-mobile-alt"></i> ${user.mobile} | 
+                                    <span style="color: var(--primary-color);">${user.tshirtName} (${user.size})</span>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 1.2rem; font-weight: 700; margin-bottom: 5px;">₹${user.amount}</div>
+                                <span class="status-badge ${statusClass}" onclick="toggleStatus('${user._id}', ${user.paymentStatus})">
+                                    ${statusText} <i class="fas fa-sync-alt" style="font-size: 0.7rem; margin-left: 5px;"></i>
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                list.innerHTML = html;
+                document.getElementById('totalOrders').textContent = users.length;
+                document.getElementById('totalRevenue').textContent = '₹' + totalAmt;
+                document.getElementById('paidCount').textContent = paid;
+                document.getElementById('pendingCount').textContent = pending;
+
+            } catch (error) {
+                list.innerHTML = '<div style="text-align: center; color: #e53935;">Failed to load orders</div>';
+            }
+        }
+
+        function toggleStatus(userId, currentStatus) {
+            const newStatus = !currentStatus;
+            // સુધારો 3: Status અપડેટ માટે Render URL
+            fetch(`${BACKEND_URL}/api/user/${userId}/payment`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paymentStatus: newStatus })
+            })
+                .then(res => res.json())
+                .then(() => {
+                    fetchOrders(); // Refresh list
+                })
+                .catch(err => alert('Failed to update status'));
+        }
+    </script>
+</body>
+
+</html>

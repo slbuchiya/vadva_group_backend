@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Shirt Payment | Vadva Group</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* Specific overrides for the public page to make it "Best" */
+        body {
+            /* Fallback is in style.css, but ensure no white override happens */
+            background-color: #1e1e2f;
+        }
+
+        .hero-section {
+            margin-bottom: 30px;
+        }
+
+        .hero-section h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, #fff, #a5a1ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .input-group input {
+            padding-left: 45px;
+        }
+
+        /* Result Card Animations */
+        .result-section {
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="hero-section">
+            <div style="font-size: 3rem; color: var(--primary-color); margin-bottom: 10px;">
+                <i class="fas fa-tshirt"></i>
+            </div>
+            <h1>T-Shirt Payment</h1>
+            <p>Vadva Group Event 2026</p>
+        </header>
+
+        <div class="search-section">
+            <div class="input-group">
+                <i class="fas fa-mobile-alt"></i>
+                <input type="tel" id="mobileInput" placeholder="Enter Mobile Number" maxlength="10">
+            </div>
+            <button onclick="searchUser()">
+                <i class="fas fa-search"></i> Search Order
+            </button>
+        </div>
+
+        <div id="resultSection" class="result-section hidden">
+            <div id="ordersContainer"></div>
+
+            <div class="card total-card">
+                <h2 style="color: #2e7d32;"><i class="fas fa-wallet"></i> Payment Details</h2>
+                <div class="detail-row">
+                    <span>Total Amount:</span>
+                    <strong id="totalAmount" style="font-size: 1.5rem; color: var(--text-dark);">₹0</strong>
+                </div>
+
+                <button id="payBtn" onclick="generateQR()">
+                    <i class="fas fa-qrcode"></i> Pay Now via UPI
+                </button>
+
+                <div id="qrSection" class="qr-section hidden">
+                    <h3 style="margin-bottom: 15px;">Scan to Pay</h3>
+                    <div id="qrcode"
+                        style="padding: 10px; background: white; border-radius: 10px; display: inline-block;"></div>
+
+                    <div style="margin-top: 20px;">
+                        <p class="upi-id"><i class="fas fa-copy"></i> <span id="upiIdDisplay">INSERT_UPI_HERE</span></p>
+                    </div>
+
+                    <a id="upiLink" href="#" class="upi-btn">
+                        <i class="fas fa-external-link-alt"></i> Open UPI App
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorMsg" class="error-msg hidden">
+            <i class="fas fa-exclamation-circle"></i> User not found! Please check the number.
+        </div>
+
+        <div style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+            <a href="admin.html"
+                style="color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.8rem; transition: color 0.3s;">
+                <i class="fas fa-lock"></i> Admin Login
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Render Backend URL (તમારી સાચી લિંક)
+        const BACKEND_URL = '';
+
+        let UPI_ID = 'buchiyasachin8@okicici';
+        let CUSTOM_QR = '';
+        let TOTAL_AMOUNT = 0;
+        let ORDER_DETAILS_TEXT = '';
+
+        // Fetch settings on load
+        refreshSettings();
+
+        function refreshSettings() {
+            // સુધારો 1: અહી Render ની લિંક વાપરી છે
+            fetch(`${BACKEND_URL}/api/settings`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.upiId) UPI_ID = data.upiId;
+
+                    // સુધારો 2: જો QR ઈમેજ હોય તો તેની આગળ પણ URL લગાવવી પડે
+                    if (data.qrImage) {
+                        CUSTOM_QR = data.qrImage.startsWith('http') ? data.qrImage : `${BACKEND_URL}${data.qrImage}`;
+                    }
+
+                    if (data.bgImage && data.bgImage.trim() !== '') {
+                        // સુધારો 3: બેકગ્રાઉન્ડ ઈમેજ માટે પણ URL ઉમેરી
+                        const bgUrl = data.bgImage.startsWith('http') ? data.bgImage : `${BACKEND_URL}${data.bgImage}`;
+                        document.body.style.backgroundImage = `url('${bgUrl}')`;
+                        document.body.style.backgroundSize = 'cover';
+                        document.body.style.backgroundPosition = 'center';
+                        document.body.style.backgroundAttachment = 'fixed';
+                    } else {
+                        document.body.style.backgroundImage = '';
+                    }
+                })
+                .catch(err => console.log('Using default settings', err));
+        }
+
+        async function searchUser() {
+            const mobile = document.getElementById('mobileInput').value;
+            const resultSection = document.getElementById('resultSection');
+            const ordersContainer = document.getElementById('ordersContainer');
+            const errorMsg = document.getElementById('errorMsg');
+            const qrSection = document.getElementById('qrSection');
+
+            // Reset UI
+            resultSection.classList.add('hidden');
+            errorMsg.classList.add('hidden');
+            qrSection.classList.add('hidden');
+            document.getElementById('qrcode').innerHTML = '';
+            ordersContainer.innerHTML = '';
+            TOTAL_AMOUNT = 0;
+            ORDER_DETAILS_TEXT = '';
+
+            if (!mobile || mobile.length < 10) {
+                alert('Please enter a valid mobile number');
+                return;
+            }
+
+            const btn = document.querySelector('button[onclick="searchUser()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+            btn.disabled = true;
+
+            try {
+                // સુધારો 4: API સર્ચ માટે Render URL
+                const response = await fetch(`${BACKEND_URL}/api/user/${mobile}`);
+
+                if (!response.ok) throw new Error('User not found');
+
+                const users = await response.json();
+
+                if (users.length === 0) throw new Error('No users found');
+
+                users.forEach((user, index) => {
+                    TOTAL_AMOUNT += user.amount;
+                    ORDER_DETAILS_TEXT += `${user.fullName} (${user.size}), `;
+
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.animationDelay = `${index * 0.1}s`;
+
+                    card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h2 style="margin:0; font-size:1.2rem; color:var(--primary-color);">Order #${index + 1}</h2>
+                    <span style="background:var(--primary-color); color:white; padding:2px 8px; border-radius:10px; font-size:0.7rem;">${user.tshirtName}</span>
+                </div>
+                <div class="detail-row">
+                    <span><i class="fas fa-user"></i> Name:</span>
+                    <strong>${user.fullName}</strong>
+                </div>
+                <div class="detail-row">
+                    <span><i class="fas fa-ruler"></i> Size:</span>
+                    <strong>${user.size}</strong>
+                </div>
+                <div class="detail-row" style="border-bottom:none;">
+                    <span><i class="fas fa-rupee-sign"></i> Amount:</span>
+                    <strong style="font-size:1.1rem;">₹${user.amount}</strong>
+                </div>
+            `;
+                    ordersContainer.appendChild(card);
+                });
+
+                document.getElementById('totalAmount').textContent = `₹${TOTAL_AMOUNT}`;
+
+                resultSection.classList.remove('hidden');
+            } catch (error) {
+                errorMsg.classList.remove('hidden');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function generateQR() {
+            const note = `Payment for ${ORDER_DETAILS_TEXT}`.substring(0, 50);
+            const upiUrl = `upi://pay?pa=${UPI_ID}&pn=Vadva_Group&am=${TOTAL_AMOUNT}&cu=INR&tn=${encodeURIComponent(note)}`;
+
+            const qrSection = document.getElementById('qrSection');
+            qrSection.classList.remove('hidden');
+
+            qrSection.scrollIntoView({ behavior: 'smooth' });
+
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+
+            if (CUSTOM_QR) {
+                const img = document.createElement('img');
+                img.src = CUSTOM_QR; // Already handled URL above
+                img.style.width = '100%';
+                img.style.maxWidth = '200px';
+                img.style.borderRadius = '10px';
+                qrContainer.appendChild(img);
+            } else {
+                new QRCode(qrContainer, {
+                    text: upiUrl,
+                    width: 200,
+                    height: 200,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            }
+
+            document.getElementById('upiLink').href = upiUrl;
+            document.getElementById('upiIdDisplay').textContent = UPI_ID;
+        }
+    </script>
+</body>
+
+</html>
