@@ -64,15 +64,23 @@ const parseCSV = (text) => {
     return result;
 };
 
+const fs = require('fs');
+const path = require('path');
+
+const CSV_FILE_NAME = 'Untitled form (Responses) - Form responses 1.csv';
+const CSV_FILE_PATH = path.join(__dirname, CSV_FILE_NAME);
+
 const importData = async () => {
     await connectDB();
 
     try {
-        console.log('Fetching data from Google Sheet...');
-        const response = await fetch(SHEET_URL);
-        if (!response.ok) throw new Error(`Failed to fetch sheet: ${response.statusText}`);
+        console.log(`Reading data from local file: ${CSV_FILE_NAME}...`);
 
-        const text = await response.text();
+        if (!fs.existsSync(CSV_FILE_PATH)) {
+            throw new Error(`File not found: ${CSV_FILE_PATH}`);
+        }
+
+        const text = fs.readFileSync(CSV_FILE_PATH, 'utf8');
         const users = parseCSV(text);
 
         console.log(`Found ${users.length} users to process.`);
