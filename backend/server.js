@@ -1,11 +1,11 @@
-require('dotenv').config(); // 1. આ લાઈન સૌથી ઉપર ઉમેરો
+require('dotenv').config();
 
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const multer = require('multer'); // Multer import કરવાનું ભૂલતા નહીં
+const multer = require('multer');
 
 // Models
 const User = require('./models/User');
@@ -18,7 +18,6 @@ const PORT = process.env.PORT || 3000;
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadPath = path.join(__dirname, 'uploads');
-        // જો ફોલ્ડર ન હોય તો બનાવશે (recursive: true થી નેસ્ટેડ ફોલ્ડર પણ બને)
         if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true });
         }
@@ -35,33 +34,29 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Middleware
-app.use(cors());
+app.use(cors()); // Vercel પરથી કોલ કરવા માટે આ જરૂરી છે
 app.use(express.json());
 
-// 2. Frontend Files Serve કરવા માટેનો સુધારેલો કોડ
-app.use(express.static(path.join(__dirname, '../frontend')));
+// Images સર્વ કરવા માટે (આ જરૂરી છે)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// 3. MongoDB Connection - સુરક્ષિત રીતે
-// અહી તમારો હાર્ડકોડ કરેલો પાસવર્ડ કાઢી નાખ્યો છે. Render ના Environment Variables માં જ આખી લિંક નાખવી.
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://sbuchiya:sbuchiya@govindsuragroup.ghhvytp.mongodb.net/tshirt_store?retryWrites=true&w=majority&appName=GovindSuraGroup';
+// --- અહીથી Frontend Static Files નો કોડ કાઢી નાખ્યો છે ---
+
+// MongoDB Connection
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/tshirt_store';
+
 mongoose.connect(MONGO_URI)
     .then(async () => {
         console.log('MongoDB Connected Successfully');
-
         try {
-            // Initialize Default UPI ID
             const upi = await Settings.findOne({ key: 'upi_id' });
             if (!upi) await Settings.create({ key: 'upi_id', value: 'mobile@upi' });
 
-            // Initialize Default QR Status
             const qr = await Settings.findOne({ key: 'qr_image' });
             if (!qr) await Settings.create({ key: 'qr_image', value: '' });
 
-            // Initialize Default BG Image
             const bg = await Settings.findOne({ key: 'bg_image' });
             if (!bg) await Settings.create({ key: 'bg_image', value: '' });
-
         } catch (err) {
             console.log("Error inside DB init:", err);
         }
@@ -70,7 +65,6 @@ mongoose.connect(MONGO_URI)
 
 // --- API Routes ---
 
-// Settings APIs
 app.get('/api/settings', async (req, res) => {
     try {
         const upi = await Settings.findOne({ key: 'upi_id' });
@@ -81,15 +75,6 @@ app.get('/api/settings', async (req, res) => {
             qrImage: qr ? qr.value : '',
             bgImage: bg ? bg.value : ''
         });
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-app.get('/api/settings/upi', async (req, res) => {
-    try {
-        const setting = await Settings.findOne({ key: 'upi_id' });
-        res.json({ upiId: setting ? setting.value : '' });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
@@ -108,7 +93,8 @@ app.post('/api/settings/upi', async (req, res) => {
 app.post('/api/settings/qr', upload.single('qrImage'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
-
+        // Render પર આખી URL બનાવવી પડે છે અથવા Frontend હેન્ડલ કરે
+        // અત્યારે સાદો પાથ રાખીએ છીએ
         const filePath = `/uploads/${req.file.filename}`;
         await Settings.findOneAndUpdate({ key: 'qr_image' }, { value: filePath }, { upsert: true });
         res.json({ message: 'QR Image uploaded', filePath });
@@ -117,11 +103,9 @@ app.post('/api/settings/qr', upload.single('qrImage'), async (req, res) => {
     }
 });
 
-// BG Image Upload API ઉમેરી (તમારા કોડમાં આ ખૂટતી હતી)
 app.post('/api/settings/bg', upload.single('bgImage'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
-
         const filePath = `/uploads/${req.file.filename}`;
         await Settings.findOneAndUpdate({ key: 'bg_image' }, { value: filePath }, { upsert: true });
         res.json({ message: 'Background Image uploaded', filePath });
@@ -139,7 +123,6 @@ app.delete('/api/settings/qr', async (req, res) => {
     }
 });
 
-// Get All Users (with filter)
 app.get('/api/users', async (req, res) => {
     try {
         const { status } = req.query;
@@ -147,14 +130,13 @@ app.get('/api/users', async (req, res) => {
         if (status === 'paid') query.paymentStatus = true;
         if (status === 'unpaid') query.paymentStatus = false;
 
-        const users = await User.find(query).sort({ createdAt: -1 }); // નવા ઓર્ડર પહેલા બતાવશે
+        const users = await User.find(query).sort({ createdAt: -1 });
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
 });
 
-// Toggle Payment Status
 app.put('/api/user/:id/payment', async (req, res) => {
     try {
         const { id } = req.params;
@@ -166,7 +148,6 @@ app.put('/api/user/:id/payment', async (req, res) => {
     }
 });
 
-// Get user by mobile number
 app.get('/api/user/:mobile', async (req, res) => {
     try {
         const mobile = req.params.mobile;
@@ -183,15 +164,13 @@ app.get('/api/user/:mobile', async (req, res) => {
     }
 });
 
-// 4. Catch-All Route (Regex વાપરો જેથી એરર ન આવે)
-app.get(/.*/, (req, res) => {
-    if (req.url.startsWith('/api')) {
-        return res.status(404).json({ message: 'API Route Not Found' });
-    }
-    res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
+// Root route - ફક્ત ચેક કરવા માટે કે સર્વર ચાલુ છે
+app.get('/', (req, res) => {
+    res.send('Vadva Group Backend is Running! Access Frontend via Vercel.');
 });
 
-// Start Server
+// Catch-All Route કાઢી નાખ્યો છે કારણ કે Frontend અલગ છે.
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
