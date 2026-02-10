@@ -199,6 +199,17 @@
                 </label>
                 <div id="bgPreview"></div>
             </div>
+
+            <div class="settings-group" style="padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <label style="color: #ffb74d;"><i class="fas fa-tags"></i> Bulk Price Update (All Users)</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="bulkPriceInput" placeholder="New Price (e.g. 350)" style="flex: 1;">
+                    <button onclick="updateBulkPrice()"
+                        style="width: auto; padding: 0 20px; background: #ff9800;">Update All</button>
+                </div>
+                <p style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-top: 5px;">Warning: This will change
+                    the amount for EVERY registered user.</p>
+            </div>
         </div>
 
         <div class="dashboard-grid">
@@ -355,6 +366,34 @@
                     fetchSettings();
                 })
                 .catch(err => alert('Upload failed'));
+        }
+
+        function updateBulkPrice() {
+            const price = document.getElementById('bulkPriceInput').value;
+            if (!price) return alert('Please enter a price');
+
+            if (!confirm(`Are you sure you want to set the price to ₹${price} for ALL users?`)) return;
+
+            fetch(`${BACKEND_URL}/api/settings/bulk-price`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ price: Number(price) })
+            })
+                .then(async res => {
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        throw new Error(data.message || `Server Error: ${res.status}`);
+                    }
+                    return data;
+                })
+                .then(data => {
+                    alert(data.message);
+                    fetchOrders();
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert(`Failed to update price: ${err.message}`);
+                });
         }
 
         async function fetchOrders() {
