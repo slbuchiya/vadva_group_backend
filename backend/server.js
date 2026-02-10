@@ -1,5 +1,4 @@
 require('dotenv').config();
-
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -7,14 +6,13 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 
-// Models
 const User = require('./models/User');
 const Settings = require('./models/Settings');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configure Multer Storage
+// Multer Storage
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const uploadPath = path.join(__dirname, 'uploads');
@@ -33,22 +31,17 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// Middleware
-app.use(cors()); // Vercel પરથી કોલ કરવા માટે આ જરૂરી છે
+app.use(cors());
 app.use(express.json());
-
-// Images સર્વ કરવા માટે (આ જરૂરી છે)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// --- અહીથી Frontend Static Files નો કોડ કાઢી નાખ્યો છે ---
-
-// MongoDB Connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/tshirt_store';
 
 mongoose.connect(MONGO_URI)
     .then(async () => {
         console.log('MongoDB Connected Successfully');
         try {
+            // Default Settings Init
             const upi = await Settings.findOne({ key: 'upi_id' });
             if (!upi) await Settings.create({ key: 'upi_id', value: 'mobile@upi' });
 
@@ -57,24 +50,42 @@ mongoose.connect(MONGO_URI)
 
             const bg = await Settings.findOne({ key: 'bg_image' });
             if (!bg) await Settings.create({ key: 'bg_image', value: '' });
-        } catch (err) {
-            console.log("Error inside DB init:", err);
-        }
+
+            // --- NEW: Global Price Setting ---
+            const price = await Settings.findOne({ key: 'tshirt_price' });
+            if (!price) await Settings.create({ key: 'tshirt_price', value: '0' });
+
+        } catch (e) { console.log(e); }
     })
     .catch(err => console.error('MongoDB Connection Error:', err));
 
 // --- API Routes ---
 
+// Get All Settings (Price સાથે)
 app.get('/api/settings', async (req, res) => {
     try {
         const upi = await Settings.findOne({ key: 'upi_id' });
         const qr = await Settings.findOne({ key: 'qr_image' });
         const bg = await Settings.findOne({ key: 'bg_image' });
+        const price = await Settings.findOne({ key: 'tshirt_price' }); // New
+
         res.json({
             upiId: upi ? upi.value : '',
             qrImage: qr ? qr.value : '',
-            bgImage: bg ? bg.value : ''
+            bgImage: bg ? bg.value : '',
+            tshirtPrice: price ? price.value : '0' // New
         });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Update Price API
+app.post('/api/settings/price', async (req, res) => {
+    try {
+        const { price } = req.body;
+        await Settings.findOneAndUpdate({ key: 'tshirt_price' }, { value: price }, { upsert: true });
+        res.json({ message: 'Price updated' });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
@@ -93,8 +104,6 @@ app.post('/api/settings/upi', async (req, res) => {
 app.post('/api/settings/qr', upload.single('qrImage'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
-        // Render પર આખી URL બનાવવી પડે છે અથવા Frontend હેન્ડલ કરે
-        // અત્યારે સાદો પાથ રાખીએ છીએ
         const filePath = `/uploads/${req.file.filename}`;
         await Settings.findOneAndUpdate({ key: 'qr_image' }, { value: filePath }, { upsert: true });
         res.json({ message: 'QR Image uploaded', filePath });
@@ -125,12 +134,7 @@ app.delete('/api/settings/qr', async (req, res) => {
 
 app.get('/api/users', async (req, res) => {
     try {
-        const { status } = req.query;
-        let query = {};
-        if (status === 'paid') query.paymentStatus = true;
-        if (status === 'unpaid') query.paymentStatus = false;
-
-        const users = await User.find(query).sort({ createdAt: -1 });
+        const users = await User.find({}).sort({ createdAt: -1 });
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
@@ -148,46 +152,20 @@ app.put('/api/user/:id/payment', async (req, res) => {
     }
 });
 
-app.post('/api/settings/bulk-price', async (req, res) => {
-    try {
-        const { price } = req.body;
-        if (!price) return res.status(400).json({ message: 'Price is required' });
-
-        const result = await User.updateMany({}, { $set: { amount: price } });
-        res.json({ message: `Price updated for ${result.modifiedCount} users`, count: result.modifiedCount });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
 app.get('/api/user/:mobile', async (req, res) => {
     try {
         const mobile = req.params.mobile;
         const users = await User.find({
             mobile: { $regex: mobile.slice(-10) }
         });
-
-        if (users.length === 0) {
-            return res.status(404).json({ message: 'User not found' });
-        }
+        if (users.length === 0) return res.status(404).json({ message: 'User not found' });
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
     }
 });
 
-// Serve Static Frontend Files
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Routes for Frontend
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});
+app.get('/', (req, res) => res.send('Vadva Group Backend Running'));
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
